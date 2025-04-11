@@ -22,8 +22,23 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>()((set) => {
-  const cookieState = Cookies.get(ACCESS_TOKEN)
-  const initToken = cookieState ? JSON.parse(cookieState) : ''
+  // 安全地解析Cookie值
+  const parseTokenFromCookie = () => {
+    try {
+      const cookieState = Cookies.get(ACCESS_TOKEN)
+      // 检查cookieState是否存在且不是'undefined'字符串
+      if (cookieState && cookieState !== 'undefined') {
+        return JSON.parse(cookieState)
+      }
+      return ''
+    } catch (_error) {
+      // 如果解析失败，返回空字符串
+      return ''
+    }
+  }
+
+  const initToken = parseTokenFromCookie()
+  
   return {
     auth: {
       user: null,
