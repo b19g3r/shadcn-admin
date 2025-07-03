@@ -2,74 +2,118 @@ import apiClient from './api'
 import Cookies from 'js-cookie'
 import { useAuthStore } from '../stores/authStore'
 
-// 认证响应接口
-export interface AuthResponse {
+// API响应中的用户信息
+export interface AuthUserResponse {
+  userId: number
+  username: string
+  nickname: string
+  avatar: string
   accessToken: string
   refreshToken: string
-  user: {
-    id: string
-    username: string
-    email: string
-    role: string[]
-    exp: number
-  }
+  expiresIn: number
+  roles: string[]
 }
 
 // 登录请求接口
 export interface LoginRequest {
   username: string
   password: string
-  [key: string]: string; // 添加索引签名
+  captcha?: string
+  captchaId?: string
+  [key: string]: string | undefined // 添加索引签名
+}
+
+// 注册请求接口
+export interface RegisterRequest {
+  username: string
+  password: string
+  confirmPassword: string
+  nickname: string
+  phone: string
+  email: string
+  captcha: string
+  captchaId: string
+  [key: string]: string // 添加索引签名
 }
 
 // 刷新token请求接口
 export interface RefreshTokenRequest {
   refreshToken: string
-  [key: string]: string; // 添加索引签名
+}
+
+// 验证码响应接口
+export interface CaptchaResponse {
+  uuid: string
+  imageData: string
 }
 
 // 认证服务
 export const AuthService = {
-  // 登录
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
+  // 获取验证码
+  async getCaptcha(): Promise<CaptchaResponse> {
     try {
-      // 对于POST请求，apiClient拦截器会自动提取响应中的data字段
-      const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
-      
+      return await apiClient.get<CaptchaResponse>('/auth/captcha')
+    } catch (_error) {
+      // 记录错误但不暴露详细信息
+      throw new Error('获取验证码失败，请重试')
+    }
+  },
+
+// 登录
+  async login(credentials: LoginRequest): Promise<AuthUserResponse> {
+    try {
+      // 调用登录API
+      const response = await apiClient.post<AuthUserResponse>('/auth/login', credentials)
+
       // 存储token
       const { auth } = useAuthStore.getState()
       auth.setAccessToken(response.accessToken)
       Cookies.set('refreshToken', response.refreshToken, { secure: true, sameSite: 'strict' })
-      
+
       // 存储用户信息
       auth.setUser({
-        accountNo: response.user.id,
-        email: response.user.email,
-        role: response.user.role,
-        exp: response.user.exp
+        accountNo: String(response.userId),
+        username: response.username,
+        nickname: response.nickname,
+        avatar: response.avatar,
+        roles: response.roles,
+        expiresIn: response.expiresIn
       })
-      
+
       return response
+    } catch (error) {
+      // 记录错误但不暴露详细信息
+      if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+        throw new Error(error.message);
+      }
+      throw new Error('登录失败，请检查用户名和密码');
+    }
+  },
+  
+  // 注册
+  async register(registerData: RegisterRequest): Promise<void> {
+    try {
+      await apiClient.post<Record<string, never>>('/auth/register', registerData)
     } catch (_error) {
-      console.log(_error)
-      // 记录错误信息但不暴露详细错误
-      throw new Error('Login failed, please check your username and password')
+      // 记录错误但不暴露详细信息
+      throw new Error('注册失败，请检查输入信息')
     }
   },
   
   // 刷新token
-  async refreshToken(request: RefreshTokenRequest): Promise<{ accessToken: string, refreshToken: string }> {
+  async refreshToken(refreshToken: string): Promise<AuthUserResponse> {
     try {
-      return await apiClient.post<{ accessToken: string, refreshToken: string }>('/auth/refresh', request)
+      return await apiClient.post<AuthUserResponse>('/auth/refresh', { refreshToken })
     } catch (_error) {
-      throw new Error('Failed to refresh token')
+      // 记录错误但不暴露详细信息
+      throw new Error('会话已过期，请重新登录')
     }
   },
   
   // 注销
   async logout(): Promise<void> {
     try {
-      await apiClient.post<{ message: string }>('/auth/logout')
+      await apiClient.post<Record<string, never>>('/auth/logout')
     } finally {
       // 无论API调用是否成功，都清除本地存储的认证信息
       const { auth } = useAuthStore.getState()

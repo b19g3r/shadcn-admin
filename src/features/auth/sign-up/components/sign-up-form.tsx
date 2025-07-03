@@ -15,27 +15,43 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { Captcha } from '@/components/captcha'
+import { AuthService, RegisterRequest } from '@/services/auth.service'
+import { toast } from '@/hooks/use-toast'
 
 type SignUpFormProps = HTMLAttributes<HTMLDivElement>
 
 const formSchema = z
   .object({
+    username: z
+      .string()
+      .min(1, { message: '请输入用户名' })
+      .min(3, { message: '用户名长度至少为3位' }),
+    nickname: z
+      .string()
+      .min(1, { message: '请输入昵称' }),
     email: z
       .string()
-      .min(1, { message: 'Please enter your email' })
-      .email({ message: 'Invalid email address' }),
+      .min(1, { message: '请输入邮箱' })
+      .email({ message: '邮箱格式不正确' }),
+    phone: z
+      .string()
+      .min(1, { message: '请输入手机号' })
+      .regex(/^1[3-9]\d{9}$/, { message: '手机号格式不正确' }),
     password: z
       .string()
-      .min(1, {
-        message: 'Please enter your password',
-      })
-      .min(7, {
-        message: 'Password must be at least 7 characters long',
-      }),
+      .min(1, { message: '请输入密码' })
+      .min(7, { message: '密码长度至少为7位' }),
     confirmPassword: z.string(),
+    captcha: z
+      .string()
+      .min(1, { message: '请输入验证码' }),
+    captchaId: z
+      .string()
+      .min(1, { message: '验证码ID不能为空' })
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
+    message: "两次输入的密码不一致",
     path: ['confirmPassword'],
   })
 
@@ -45,20 +61,61 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      username: '',
+      nickname: '',
       email: '',
+      phone: '',
       password: '',
       confirmPassword: '',
+      captcha: '',
+      captchaId: ''
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
+  // 处理验证码变化
+  const handleCaptchaChange = (value: string, captchaId: string) => {
+    form.setValue('captcha', value)
+    form.setValue('captchaId', captchaId)
+  }
 
-    setTimeout(() => {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    setIsLoading(true)
+    
+    try {
+      // 准备注册请求数据
+      const registerData: RegisterRequest = {
+        username: data.username,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+        nickname: data.nickname,
+        phone: data.phone,
+        email: data.email,
+        captcha: data.captcha,
+        captchaId: data.captchaId
+      }
+      
+      // 调用注册API
+      await AuthService.register(registerData)
+      
+      // 注册成功
+      toast({
+        title: '注册成功',
+        description: '请登录您的账号',
+      })
+      
+      // 重定向到登录页
+      window.location.href = '/sign-in'
+    } catch (error) {
+      // 注册失败
+      const errorMessage = error instanceof Error ? error.message : '注册失败，请检查您的输入'
+      toast({
+        title: '注册失败',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
       setIsLoading(false)
-    }, 3000)
+    }
   }
 
   return (
@@ -68,12 +125,12 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
           <div className='grid gap-2'>
             <FormField
               control={form.control}
-              name='email'
+              name='username'
               render={({ field }) => (
                 <FormItem className='space-y-1'>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>用户名</FormLabel>
                   <FormControl>
-                    <Input placeholder='name@example.com' {...field} />
+                    <Input placeholder='请输入用户名' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -81,12 +138,53 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
             />
             <FormField
               control={form.control}
+              name='nickname'
+              render={({ field }) => (
+                <FormItem className='space-y-1'>
+                  <FormLabel>昵称</FormLabel>
+                  <FormControl>
+                    <Input placeholder='请输入昵称' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className='grid grid-cols-1 gap-2 md:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='email'
+                render={({ field }) => (
+                  <FormItem className='space-y-1'>
+                    <FormLabel>邮箱</FormLabel>
+                    <FormControl>
+                      <Input placeholder='请输入邮箱' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='phone'
+                render={({ field }) => (
+                  <FormItem className='space-y-1'>
+                    <FormLabel>手机号</FormLabel>
+                    <FormControl>
+                      <Input placeholder='请输入手机号' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
               name='password'
               render={({ field }) => (
                 <FormItem className='space-y-1'>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>密码</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder='********' {...field} />
+                    <PasswordInput placeholder='请输入密码' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -97,16 +195,32 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               name='confirmPassword'
               render={({ field }) => (
                 <FormItem className='space-y-1'>
-                  <FormLabel>Confirm Password</FormLabel>
+                  <FormLabel>确认密码</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder='********' {...field} />
+                    <PasswordInput placeholder='请再次输入密码' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='captcha'
+              render={() => (
+                <FormItem className='space-y-1'>
+                  <FormLabel>验证码</FormLabel>
+                  <FormControl>
+                    <Captcha 
+                      onCaptchaChange={handleCaptchaChange} 
+                      disabled={isLoading}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <Button className='mt-2' disabled={isLoading}>
-              Create Account
+              创建账号
             </Button>
 
             <div className='relative my-2'>
@@ -115,7 +229,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
               </div>
               <div className='relative flex justify-center text-xs uppercase'>
                 <span className='bg-background px-2 text-muted-foreground'>
-                  Or continue with
+                  或继续使用
                 </span>
               </div>
             </div>
