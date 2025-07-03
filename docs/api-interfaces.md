@@ -1,4 +1,4 @@
-# Shadcn Admin 后端接口设计
+<!-- # Shadcn Admin 后端接口设计
 
 ## 1. 认证服务接口 (auth-service)
 
@@ -483,4 +483,4 @@ Authorization: Bearer {token}
 - 403: 无权限
 - 404: 资源不存在
 - 500: 服务器内部错误
-- 503: 服务不可用 
+- 503: 服务不可用  -->
