@@ -38,8 +38,6 @@
   "data": {
     "userId": "integer //用户ID",
     "username": "string //用户名",
-    "nickname": "string //昵称",
-    "avatar": "string //头像",
     "accessToken": "string //访问令牌",
     "refreshToken": "string //刷新令牌",
     "expiresIn": "integer //过期时间",

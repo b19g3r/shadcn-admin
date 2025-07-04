@@ -1,4 +1,4 @@
-import { HTMLAttributes, useState, useEffect } from 'react'
+import { HTMLAttributes, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -16,7 +16,9 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { CaptchaInput } from '@/components/captcha-input'
 import AuthService from '@/services/auth.service'
+import { toast } from 'sonner'
 
 type UserAuthFormProps = HTMLAttributes<HTMLFormElement>
 
@@ -32,14 +34,12 @@ const formSchema = z.object({
     .min(7, {
       message: 'Password must be at least 7 characters long',
     }),
-  captcha: z.string().optional(),
+  captcha: z.string().min(1, { message: '请输入验证码' }),
   captchaId: z.string().optional(),
 })
 
 export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [captchaImage, setCaptchaImage] = useState<string | null>(null)
-  const [captchaId, setCaptchaId] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -48,21 +48,9 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
       username: '',
       password: '',
       captcha: '',
+      captchaId: '',
     },
   })
-
-  const fetchCaptcha = async () => {
-    const captchaResponse = await AuthService.getCaptcha()
-    if (captchaResponse) {
-      setCaptchaImage(captchaResponse.data.imageData)
-      setCaptchaId(captchaResponse.data.uuid)
-      form.setValue('captchaId', captchaResponse.data.uuid)
-    }
-  }
-
-  useEffect(() => {
-    fetchCaptcha()
-  }, [])
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true)
@@ -78,16 +66,17 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
       if (loginResponse) {
         // 登录成功，跳转到首页或其他页面
         navigate({ to: '/' })
-      } else {
-        // 登录失败，刷新验证码
-        fetchCaptcha()
       }
-    } catch (error) {
-      console.error('Login error:', error)
-      fetchCaptcha()
+    } catch (_error) {
+      // 错误已由AuthService处理
+      toast.error('登录失败，请重试')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleCaptchaIdChange = (captchaId: string) => {
+    form.setValue('captchaId', captchaId)
   }
 
   return (
@@ -130,33 +119,22 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
           )}
         />
 
-        {captchaImage && (
-          <FormField
-            control={form.control}
-            name='captcha'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Verification Code</FormLabel>
-                <div className='flex gap-2'>
-                  <FormControl>
-                    <Input placeholder='Enter code' {...field} />
-                  </FormControl>
-                  <div 
-                    className='flex-shrink-0 h-10 cursor-pointer border rounded-md overflow-hidden'
-                    onClick={fetchCaptcha}
-                  >
-                    <img 
-                      src={captchaImage} 
-                      alt="Captcha" 
-                      className='h-full'
-                    />
-                  </div>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+        <FormField
+          control={form.control}
+          name='captcha'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Verification Code</FormLabel>
+              <FormControl>
+                <CaptchaInput 
+                  onCaptchaIdChange={handleCaptchaIdChange}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <Button className='mt-2' disabled={isLoading}>
           Login

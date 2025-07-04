@@ -15,8 +15,6 @@ interface LoginResponse {
   data: {
     userId: number
     username: string
-    nickname: string
-    avatar: string
     accessToken: string
     refreshToken: string
     expiresIn: number
@@ -55,7 +53,7 @@ export const AuthService = {
    */
   async login(loginData: LoginRequest): Promise<LoginResponse | null> {
     try {
-      const response = await api.post<LoginResponse>('/login', loginData)
+      const response = await api.post<LoginResponse>('/auth/login', loginData)
       
       if (response.data.code === 200) {
         const { userId, username, accessToken, roles, expiresIn } = response.data.data
@@ -88,7 +86,7 @@ export const AuthService = {
    */
   async logout(): Promise<boolean> {
     try {
-      const response = await api.post<ApiResponse<Record<string, never>>>('/logout')
+      const response = await api.post<ApiResponse<Record<string, never>>>('/auth/logout')
       
       if (response.data.code === 200) {
         // 清除认证信息
@@ -115,7 +113,7 @@ export const AuthService = {
    */
   async getCaptcha(): Promise<CaptchaResponse | null> {
     try {
-      const response = await api.get<CaptchaResponse>('/captcha')
+      const response = await api.get<CaptchaResponse>('/auth/captcha')
       
       if (response.data.code === 200) {
         return response.data
@@ -137,7 +135,7 @@ export const AuthService = {
    */
   async refreshToken(refreshToken: string): Promise<LoginResponse | null> {
     try {
-      const response = await api.post<LoginResponse>('/refresh', { refreshToken })
+      const response = await api.post<LoginResponse>('/auth/refresh', { refreshToken })
       
       if (response.data.code === 200) {
         const { accessToken } = response.data.data
