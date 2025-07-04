@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   BadgeCheck,
   Bell,
@@ -23,6 +23,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import AuthService from '@/services/auth.service'
 
 export function NavUser({
   user,
@@ -34,6 +35,19 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const navigate = useNavigate()
+  
+  const handleLogout = async () => {
+    try {
+      const result = await AuthService.logout()
+      if (result) {
+        // 重定向到登录页面
+        navigate({ to: '/sign-in' })
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -102,7 +116,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>
