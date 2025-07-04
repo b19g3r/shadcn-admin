@@ -36,9 +36,10 @@ declare module '@tanstack/react-table' {
 interface DataTableProps {
   columns: ColumnDef<User>[]
   data: User[]
+  isLoading?: boolean
 }
 
-export function UsersTable({ columns, data }: DataTableProps) {
+export function UsersTable({ columns, data, isLoading }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -121,6 +122,13 @@ export function UsersTable({ columns, data }: DataTableProps) {
                   className='h-24 text-center'
                 >
                   No results.
+                </TableCell>
+              </TableRow>
+            )}
+            {isLoading && (
+              <TableRow>
+                <TableCell colSpan={columns.length} className='h-24 text-center'>
+                  Loading...
                 </TableCell>
               </TableRow>
             )}

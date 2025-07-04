@@ -11,8 +11,29 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import AuthService from '@/services/auth.service'
+import { useToast } from '@/hooks/use-toast'
 
 export function ProfileDropdown() {
+  const { toast } = useToast()
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout()
+      toast({
+        title: "登出成功",
+        description: "您已成功退出登录",
+      })
+      window.location.href = '/sign-in'
+    } catch (_error) {
+      toast({
+        title: "登出失败",
+        description: "请重试",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -55,7 +76,7 @@ export function ProfileDropdown() {
           <DropdownMenuItem>New Team</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
           Log out
           <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>

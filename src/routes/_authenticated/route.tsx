@@ -5,12 +5,22 @@ import { SearchProvider } from '@/context/search-context'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import SkipToMain from '@/components/skip-to-main'
-import { AuthService } from '@/services/auth.service'
+import { useAuthStore } from '@/stores/authStore'
 
 export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: () => {
+  beforeLoad: async () => {
+    const { isInitializing, user, initializeAuth } = useAuthStore.getState().auth
+
+    // 如果正在初始化，则等待
+    if (isInitializing) {
+      await initializeAuth()
+    }
+
+    // 再次获取最新的用户状态
+    const currentUser = useAuthStore.getState().auth.user
+
     // 检查用户是否已认证
-    if (!AuthService.isAuthenticated()) {
+    if (!currentUser) {
       // 用户未认证，重定向到登录页
       throw redirect({
         to: '/sign-in',

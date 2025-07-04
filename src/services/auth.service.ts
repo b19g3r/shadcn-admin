@@ -132,6 +132,27 @@ export const AuthService = {
   getCurrentUser() {
     const { auth } = useAuthStore.getState()
     return auth.user
+  },
+  
+  // 获取账户信息
+  async getAccountInfo(): Promise<void> {
+    try {
+      const response = await apiClient.get<AuthUserResponse>('/auth/account')
+      const { auth } = useAuthStore.getState()
+      auth.setUser({
+        accountNo: String(response.userId),
+        username: response.username,
+        nickname: response.nickname,
+        avatar: response.avatar,
+        roles: response.roles,
+        expiresIn: response.expiresIn
+      })
+    } catch (_error) {
+      // 如果获取用户信息失败，则重置认证状态
+      const { auth } = useAuthStore.getState()
+      auth.reset()
+      throw new Error('获取用户信息失败，请重新登录')
+    }
   }
 }
 

@@ -1,11 +1,14 @@
-import { IconMailPlus, IconUserPlus } from '@tabler/icons-react'
+import { IconMailPlus, IconUserPlus, IconRefresh } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { useUsers } from '../context/users-context'
 
 export function UsersPrimaryButtons() {
-  const { setOpen } = useUsers()
+  const { setOpen, refetch } = useUsers()
   return (
     <div className='flex gap-2'>
+      <Button variant='outline' className='space-x-1' onClick={refetch}>
+        <IconRefresh size={18} />
+      </Button>
       <Button
         variant='outline'
         className='space-x-1'

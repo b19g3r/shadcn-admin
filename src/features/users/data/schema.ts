@@ -1,10 +1,8 @@
 import { z } from 'zod'
 
 const userStatusSchema = z.union([
-  z.literal('active'),
-  z.literal('inactive'),
-  z.literal('invited'),
-  z.literal('suspended'),
+  z.literal(0),
+  z.literal(1),
 ])
 export type UserStatus = z.infer<typeof userStatusSchema>
 
@@ -16,16 +14,16 @@ const userRoleSchema = z.union([
 ])
 
 const userSchema = z.object({
-  id: z.string(),
-  firstName: z.string(),
-  lastName: z.string(),
+  id: z.number(),
   username: z.string(),
-  email: z.string(),
-  phoneNumber: z.string(),
+  nickname: z.string(),
+  phone: z.string().nullable(),
+  email: z.string().nullable(),
+  avatar: z.string(),
   status: userStatusSchema,
-  role: userRoleSchema,
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  createTime: z.coerce.date(),
+  updateTime: z.coerce.date(),
+  roles: z.array(z.string()).nullable(),
 })
 export type User = z.infer<typeof userSchema>
 
